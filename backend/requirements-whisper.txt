@@ -1,0 +1,2 @@
+# Optional: install for real transcription (requires ffmpeg)
+# openai-whisper>=20231117
