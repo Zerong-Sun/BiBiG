@@ -102,7 +102,8 @@ class PDFGenerator:
 
         doc.build(story)
 
-        pdf_data = open(tmp_path, "rb").read()
+        with open(tmp_path, "rb") as f:
+            pdf_data = f.read()
         os.unlink(tmp_path)
 
         object_name = f"books/{uuid.uuid4()}/{title}.pdf"

@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String, DateTime, Boolean
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import UTC, datetime
 from app.models.base import Base
 
 
@@ -15,8 +15,8 @@ class User(Base):
     avatar_url = Column(String, nullable=True)
     birth_date = Column(DateTime, nullable=True)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     recordings = relationship("Recording", back_populates="user")
     biographies = relationship("Biography", back_populates="user")

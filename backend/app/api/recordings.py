@@ -3,8 +3,10 @@ import uuid
 from datetime import datetime
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Form
 from sqlalchemy.orm import Session
+from app.core.auth import get_current_user
 from app.models.base import get_db
 from app.models.recording import Recording, RecordingStatus
+from app.models.user import User
 from app.services.audio.whisper_service import WhisperService
 from app.services.audio.storage_service import StorageService
 
@@ -21,7 +23,10 @@ async def upload_recording(
     user_id: str = Form(...),
     title: str | None = Form(None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Cannot upload for another user")
     if recording_id:
         existing = db.query(Recording).filter(Recording.id == recording_id).first()
         if existing:
@@ -60,7 +65,13 @@ async def upload_recording(
 
 
 @router.get("/user/{user_id}")
-async def list_user_recordings(user_id: str, db: Session = Depends(get_db)):
+async def list_user_recordings(
+    user_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Cannot access another user's recordings")
     recordings = db.query(Recording).filter(Recording.user_id == user_id).all()
     return [
         {
@@ -75,10 +86,16 @@ async def list_user_recordings(user_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/{recording_id}")
-async def get_recording(recording_id: str, db: Session = Depends(get_db)):
+async def get_recording(
+    recording_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     recording = db.query(Recording).filter(Recording.id == recording_id).first()
     if not recording:
         raise HTTPException(status_code=404, detail="Recording not found")
+    if recording.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Cannot access another user's recording")
     return {
         "id": recording.id,
         "user_id": recording.user_id,

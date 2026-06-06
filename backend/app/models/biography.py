@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String, DateTime, ForeignKey, Text, Enum, Integer
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import UTC, datetime
 import enum
 from app.models.base import Base
 
@@ -33,8 +33,8 @@ class Biography(Base):
     hometown = Column(String, nullable=True)
     key_events = Column(Text, nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     user = relationship("User", back_populates="biographies")
     recordings = relationship("Recording", back_populates="biography")
@@ -58,8 +58,8 @@ class BiographyEntry(Base):
     time_period_end = Column(String, nullable=True)
     location = Column(String, nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     biography = relationship("Biography", back_populates="entries")
     recording = relationship("Recording", back_populates="biography_entries")
@@ -75,7 +75,7 @@ class Chapter(Base):
     summary = Column(Text, nullable=True)
     content = Column(Text, nullable=False, default="")
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     biography = relationship("Biography", back_populates="chapters")

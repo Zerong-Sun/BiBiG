@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String, DateTime, ForeignKey, Text, Enum, Integer
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import UTC, datetime
 import enum
 from app.models.base import Base
 
@@ -34,7 +34,7 @@ class Book(Base):
     word_count = Column(Integer, nullable=True)
 
     status = Column(Enum(BookStatus), default=BookStatus.GENERATING)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     biography = relationship("Biography")

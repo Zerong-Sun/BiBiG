@@ -1,8 +1,11 @@
+import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
+from app.core.auth import get_current_user
 from app.models.base import get_db
-from app.models.biography import Biography, BiographyStyle
+from app.models.biography import Biography, BiographyEntry, BiographyStyle
+from app.models.user import User
 from app.services.biography.biography_service import BiographyService
 
 router = APIRouter()
@@ -25,7 +28,13 @@ class SaveAnswerRequest(BaseModel):
 
 
 @router.post("/")
-async def create_biography(request: CreateBiographyRequest, db: Session = Depends(get_db)):
+async def create_biography(
+    request: CreateBiographyRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if request.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Cannot create biography for another user")
     service = BiographyService(db)
     biography = await service.create_biography(
         user_id=request.user_id,
@@ -46,7 +55,13 @@ async def process_recording(
     biography_id: str,
     request: ProcessRecordingRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    biography = db.query(Biography).filter(Biography.id == biography_id).first()
+    if not biography:
+        raise HTTPException(status_code=404, detail="Biography not found")
+    if biography.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Cannot access another user's biography")
     service = BiographyService(db)
     try:
         entry = await service.process_recording(
@@ -65,7 +80,16 @@ async def process_recording(
 
 
 @router.get("/{biography_id}/questions")
-async def get_suggested_questions(biography_id: str, db: Session = Depends(get_db)):
+async def get_suggested_questions(
+    biography_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    biography = db.query(Biography).filter(Biography.id == biography_id).first()
+    if not biography:
+        raise HTTPException(status_code=404, detail="Biography not found")
+    if biography.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Cannot access another user's biography")
     service = BiographyService(db)
     try:
         questions = await service.generate_questions(biography_id)
@@ -79,8 +103,27 @@ async def save_answer(
     biography_id: str,
     request: SaveAnswerRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    biography = db.query(Biography).filter(Biography.id == biography_id).first()
+    if not biography:
+        raise HTTPException(status_code=404, detail="Biography not found")
+    if biography.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Cannot access another user's biography")
+
+    entry = BiographyEntry(
+        id=str(uuid.uuid4()),
+        biography_id=biography_id,
+        recording_id=request.recording_id,
+        title=f"追问回答 #{request.question_index + 1}",
+        content=request.answer,
+    )
+    db.add(entry)
+    db.commit()
+    db.refresh(entry)
+
     return {
+        "id": entry.id,
         "biography_id": biography_id,
         "question_index": request.question_index,
         "answer": request.answer,
@@ -89,7 +132,13 @@ async def save_answer(
 
 
 @router.get("/user/{user_id}")
-async def list_user_biographies(user_id: str, db: Session = Depends(get_db)):
+async def list_user_biographies(
+    user_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Cannot access another user's biographies")
     biographies = db.query(Biography).filter(Biography.user_id == user_id).all()
     return [
         {
@@ -103,10 +152,16 @@ async def list_user_biographies(user_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/{biography_id}")
-async def get_biography(biography_id: str, db: Session = Depends(get_db)):
+async def get_biography(
+    biography_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     biography = db.query(Biography).filter(Biography.id == biography_id).first()
     if not biography:
         raise HTTPException(status_code=404, detail="Biography not found")
+    if biography.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Cannot access another user's biography")
 
     entries = biography.entries
     return {

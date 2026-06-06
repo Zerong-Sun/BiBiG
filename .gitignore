@@ -22,3 +22,4 @@ dist/
 # Test
 .pytest_cache/
 htmlcov/
+backend/.pytest_cache/

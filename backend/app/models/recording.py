@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String, DateTime, Integer, ForeignKey, Text, Enum
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import UTC, datetime
 import enum
 from app.models.base import Base
 
@@ -28,8 +28,8 @@ class Recording(Base):
     transcript_segments = Column(Text, nullable=True)
 
     status = Column(Enum(RecordingStatus), default=RecordingStatus.UPLOADING)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     user = relationship("User", back_populates="recordings")
     biography = relationship("Biography", back_populates="recordings")

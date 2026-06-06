@@ -2,7 +2,7 @@ import json
 import uuid
 from typing import List, Dict, Any
 from sqlalchemy.orm import Session
-from app.models.biography import Biography, BiographyEntry, BiographyStyle
+from app.models.biography import Biography, BiographyEntry, BiographyStyle, BiographyStatus
 from app.models.recording import Recording
 from app.services.llm.factory import get_llm_provider
 
@@ -73,7 +73,8 @@ class BiographyService:
         )
 
         self.db.add(entry)
-        biography.status = biography.status or biography.status
+        if biography.status == BiographyStatus.DRAFT:
+            biography.status = BiographyStatus.IN_PROGRESS
         self.db.commit()
         self.db.refresh(entry)
         return entry

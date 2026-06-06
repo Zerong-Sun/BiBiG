@@ -13,6 +13,9 @@ export default function Home() {
     Array<{ id: string; title: string; status: string }>
   >([]);
   const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newTitle, setNewTitle] = useState('我的人生故事');
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -28,11 +31,19 @@ export default function Home() {
   }, [setUserId, setBiographyId, biographyId]);
 
   const handleCreateBiography = async () => {
-    const title = prompt('请输入传记标题', '我的人生故事');
+    const title = newTitle.trim();
     if (!title) return;
-    const bio = await createBiography(userId, title);
-    setBiographies((prev) => [...prev, bio]);
-    setBiographyId(bio.id);
+
+    setCreating(true);
+    try {
+      const bio = await createBiography(userId, title);
+      setBiographies((prev) => [...prev, bio]);
+      setBiographyId(bio.id);
+      setShowCreateModal(false);
+      setNewTitle('我的人生故事');
+    } finally {
+      setCreating(false);
+    }
   };
 
   if (loading) {
@@ -67,7 +78,7 @@ export default function Home() {
             </Link>
             <button
               type="button"
-              onClick={handleCreateBiography}
+              onClick={() => setShowCreateModal(true)}
               className="px-8 py-4 border border-blue-500 text-blue-600 rounded-xl text-lg hover:bg-blue-50"
             >
               新建传记
@@ -109,6 +120,48 @@ export default function Home() {
           </section>
         )}
       </main>
+
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <h2 className="text-xl font-semibold mb-4">新建传记</h2>
+            <label className="block text-sm text-gray-600 mb-2" htmlFor="biography-title">
+              传记标题
+            </label>
+            <input
+              id="biography-title"
+              type="text"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleCreateBiography()}
+              className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="我的人生故事"
+              autoFocus
+            />
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setNewTitle('我的人生故事');
+                }}
+                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                disabled={creating}
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateBiography}
+                disabled={creating || !newTitle.trim()}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+              >
+                {creating ? '创建中...' : '创建'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

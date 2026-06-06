@@ -1,3 +1,4 @@
+import asyncio
 import os
 import tempfile
 from typing import Dict, Any, Optional
@@ -39,8 +40,10 @@ class WhisperService:
                     tmp.write(response.content)
                     local_path = tmp.name
 
-        model = self._get_model()
-        result = model.transcribe(local_path, language="zh", task="transcribe")
+        model = await asyncio.to_thread(self._get_model)
+        result = await asyncio.to_thread(
+            model.transcribe, local_path, language="zh", task="transcribe"
+        )
 
         if local_path != audio_path and os.path.exists(local_path):
             os.unlink(local_path)

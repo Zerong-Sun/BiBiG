@@ -5,25 +5,64 @@ const api = axios.create({
 });
 
 const USER_ID_KEY = 'bibig-user-id';
+const USER_EMAIL_KEY = 'bibig-user-email';
+const TOKEN_KEY = 'bibig-auth-token';
+const DEMO_PASSWORD = 'demo123';
+
+function setAuthToken(token: string | null) {
+  if (token) {
+    api.defaults.headers.common.Authorization = `Bearer ${token}`;
+    localStorage.setItem(TOKEN_KEY, token);
+  } else {
+    delete api.defaults.headers.common.Authorization;
+    localStorage.removeItem(TOKEN_KEY);
+  }
+}
+
+const storedToken = localStorage.getItem(TOKEN_KEY);
+if (storedToken) {
+  setAuthToken(storedToken);
+}
+
+async function loginWithCredentials(email: string, password: string): Promise<string> {
+  const { data } = await api.post('/users/login', { email, password });
+  setAuthToken(data.access_token);
+  localStorage.setItem(USER_ID_KEY, data.user.id);
+  localStorage.setItem(USER_EMAIL_KEY, email);
+  return data.user.id;
+}
 
 export async function ensureDemoUser(): Promise<string> {
-  const stored = localStorage.getItem(USER_ID_KEY);
-  if (stored) {
+  const storedId = localStorage.getItem(USER_ID_KEY);
+  const storedEmail = localStorage.getItem(USER_EMAIL_KEY);
+
+  if (storedEmail) {
     try {
-      await api.get(`/users/${stored}`);
-      return stored;
+      return await loginWithCredentials(storedEmail, DEMO_PASSWORD);
     } catch {
       localStorage.removeItem(USER_ID_KEY);
+      localStorage.removeItem(USER_EMAIL_KEY);
+      setAuthToken(null);
     }
   }
 
-  const { data } = await api.post('/users/', {
+  if (storedId) {
+    try {
+      await api.get(`/users/${storedId}`);
+      return storedId;
+    } catch {
+      localStorage.removeItem(USER_ID_KEY);
+      setAuthToken(null);
+    }
+  }
+
+  const email = `demo-${Date.now()}@bibig.local`;
+  await api.post('/users/', {
     name: '演示用户',
-    email: `demo-${Date.now()}@bibig.local`,
-    password: 'demo123',
+    email,
+    password: DEMO_PASSWORD,
   });
-  localStorage.setItem(USER_ID_KEY, data.id);
-  return data.id;
+  return loginWithCredentials(email, DEMO_PASSWORD);
 }
 
 export async function uploadRecording(formData: FormData) {

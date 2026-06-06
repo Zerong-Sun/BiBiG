@@ -48,14 +48,28 @@ docker-compose up -d
 
 见 `backend/.env.example`
 
+- `SECRET_KEY`: JWT 签名密钥，生产环境必须修改
 - `DEFAULT_LLM_PROVIDER`: `mock` | `openai` | `claude`
 - `USE_MOCK_TRANSCRIPTION`: 开发时跳过 Whisper
 - `USE_LOCAL_STORAGE`: 使用本地文件存储代替 MinIO
+
+## 认证
+
+录音、传记、书籍等 API 需要 JWT 认证。登录接口：
+
+```bash
+POST /api/users/login
+{ "email": "user@example.com", "password": "..." }
+# 返回 access_token，请求时携带 Authorization: Bearer <token>
+```
+
+前端演示模式会自动创建用户并登录，token 保存在 localStorage。
 
 ## 测试
 
 ```bash
 cd backend
+pip install -r requirements-dev.txt
 pytest -v
 ```
 
