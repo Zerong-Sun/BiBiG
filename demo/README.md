@@ -4,4 +4,4 @@
 
 | 应用 | 路径 | 使用的 skill |
 |------|------|----------------|
-| BiBiG 口述传记 | [bibig/](bibig/) | `how-to-do-biography` |
+| BiBiG 口述传记 | [bibig/](bibig/) | `how-to-do-biography`、`biography-vsi`、`footsteps` |

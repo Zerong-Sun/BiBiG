@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { generateQuestions } from '../services/api';
 import MiniVoiceRecorder from './MiniVoiceRecorder';
+import SkillAttribution, { DEFAULT_SKILLS, type BiographySkill } from './SkillAttribution';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -10,6 +11,7 @@ interface Message {
 
 interface ChatInterfaceProps {
   questions: string[];
+  skills?: BiographySkill[];
   onAnswer: (questionId: number, answer: string) => void;
   onComplete?: () => void;
   questionMode?: string;
@@ -19,6 +21,7 @@ interface ChatInterfaceProps {
 
 export default function ChatInterface({
   questions: initialQuestions,
+  skills: initialSkills = DEFAULT_SKILLS,
   onAnswer,
   onComplete,
   questionMode = 'ai',
@@ -26,6 +29,7 @@ export default function ChatInterface({
   biographyId,
 }: ChatInterfaceProps) {
   const [questions, setQuestions] = useState(initialQuestions);
+  const [skills, setSkills] = useState(initialSkills);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -82,6 +86,7 @@ export default function ChatInterface({
     if (biographyId && mode !== 'custom') {
       const result = await generateQuestions(biographyId, mode);
       setQuestions(result.questions);
+      setSkills(result.skills ?? DEFAULT_SKILLS);
       setCurrentQuestion(0);
       setMessages([]);
     }
@@ -116,6 +121,7 @@ export default function ChatInterface({
             </button>
           ))}
         </div>
+        {questionMode === 'ai' && <SkillAttribution skills={skills} />}
         {questionMode === 'custom' && (
           <div className="flex gap-2">
             <input

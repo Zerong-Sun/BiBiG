@@ -1,0 +1,7 @@
+interface:
+  display_name: "Footsteps"
+  short_description: "Field biography by following paths and pursuit-narrative (Richard Holmes)."
+  default_prompt: "Use $footsteps to plan a field biography pursuit: routes, on-site reading, parallel diary, and broken-bridge writing."
+
+policy:
+  allow_implicit_invocation: true

@@ -32,6 +32,10 @@ const STATUS_LABELS: Record<string, string> = {
   failed: '转写失败',
 };
 
+function hasPlayableAudio(audioUrl?: string) {
+  return Boolean(audioUrl && !audioUrl.startsWith('text://'));
+}
+
 export default function Archive() {
   const [searchParams] = useSearchParams();
   const { requireAuth } = useAuth();
@@ -370,7 +374,7 @@ export default function Archive() {
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {rec.audio_url && (
+                    {hasPlayableAudio(rec.audio_url) && (
                       <button type="button" onClick={() => playServer(rec.audio_url!)} className="btn-secondary text-sm py-1 px-3">
                         播放
                       </button>

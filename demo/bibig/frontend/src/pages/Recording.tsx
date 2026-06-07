@@ -6,6 +6,7 @@ import {
   uploadRecording,
   transcribeRecording,
   updateTranscript,
+  submitTextRecording,
   getSuggestedQuestions,
   saveAnswer,
   processRecording,
@@ -13,12 +14,15 @@ import {
   listBiographies,
   getApiErrorMessage,
 } from '../services/api';
+import { DEFAULT_SKILLS, type BiographySkill } from '../components/SkillAttribution';
 import { useAppStore, isOfflineMode } from '../hooks/useAppStore';
 import { useAuth } from '../hooks/useAuth';
 
 type Step = 'prep' | 'record' | 'transcribe' | 'organize' | 'chat' | 'processing';
+type InputMode = 'voice' | 'text';
 
-const STEP_LABELS = ['准备', '录音', '转写', '整理', '对话'];
+const VOICE_STEP_LABELS = ['准备', '录音', '转写', '整理', '对话'];
+const TEXT_STEP_LABELS = ['准备', '输入', '整理', '对话'];
 
 const METHOD_LABELS: Record<string, string> = {
   guided: '引导式问答',
@@ -38,11 +42,13 @@ export default function Recording() {
   const { requireAuth } = useAuth();
   const { userId, setUserId, biographyId, setBiographyId } = useAppStore();
   const [step, setStep] = useState<Step>('prep');
+  const [inputMode, setInputMode] = useState<InputMode>('voice');
   const [recordingId, setRecordingId] = useState<string | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [transcript, setTranscript] = useState('');
   const [segments, setSegments] = useState<Array<{ start: number; end: number; text: string }>>([]);
   const [questions, setQuestions] = useState<string[]>([]);
+  const [questionSkills, setQuestionSkills] = useState<BiographySkill[]>(DEFAULT_SKILLS);
   const [questionMode, setQuestionMode] = useState('ai');
   const [error, setError] = useState<string | null>(null);
   const [processingMsg, setProcessingMsg] = useState('');
@@ -157,37 +163,73 @@ export default function Recording() {
     }
   };
 
+  const proceedAfterTranscript = async (rid: string, text: string) => {
+    if (biographyId) {
+      setProcessingMsg(isOfflineMode() ? '正在整理传记...' : 'AI 正在整理传记...');
+      await processRecording(biographyId, rid, text);
+      const mode = bioInfo?.recording_method === 'timeline' ? 'template' : questionMode;
+      const questionsResult = await getSuggestedQuestions(biographyId, mode);
+      setQuestions(questionsResult.questions);
+      setQuestionSkills(questionsResult.skills ?? DEFAULT_SKILLS);
+    } else {
+      setQuestions([
+        '您小时候最难忘的一件事是什么？',
+        '能说说您的家人吗？',
+        '您想对后辈说些什么？',
+      ]);
+    }
+    setStep('chat');
+  };
+
   const handleConfirmTranscript = async () => {
-    if (!recordingId) return;
+    if (!transcript.trim()) {
+      setError(inputMode === 'text' ? '请输入您的故事内容' : '转写文本不能为空');
+      return;
+    }
     setStep('processing');
-    setProcessingMsg('正在保存转写文本...');
+    setError(null);
+    setProcessingMsg(
+      inputMode === 'text' ? '正在保存文字内容...' : '正在保存转写文本...',
+    );
 
     try {
-      await updateTranscript(recordingId, transcript);
-
-      if (biographyId) {
-        setProcessingMsg(isOfflineMode() ? '正在整理传记...' : 'AI 正在整理传记...');
-        await processRecording(biographyId, recordingId, transcript);
-        const mode = bioInfo?.recording_method === 'timeline' ? 'template' : questionMode;
-        const questionsResult = await getSuggestedQuestions(biographyId, mode);
-        setQuestions(questionsResult.questions);
+      let rid = recordingId;
+      if (inputMode === 'text' && !rid) {
+        const result = await submitTextRecording({
+          userId,
+          transcript,
+          biographyId: biographyId || undefined,
+        });
+        rid = result.id as string;
+        setRecordingId(rid);
+      } else if (rid) {
+        await updateTranscript(rid, transcript);
       } else {
-        setQuestions([
-          '您小时候最难忘的一件事是什么？',
-          '能说说您的家人吗？',
-          '您想对后辈说些什么？',
-        ]);
+        throw new Error('未找到录音记录');
       }
-      setStep('chat');
+
+      await proceedAfterTranscript(rid!, transcript);
     } catch (err) {
       console.error(err);
       setError(
         isOfflineMode()
-          ? '整理失败，请确保已输入转写文字'
+          ? '整理失败，请确保已输入内容'
           : `${getApiErrorMessage(err)}。请检查设置页中的 LLM 配置。`,
       );
       setStep('transcribe');
     }
+  };
+
+  const startTextInput = () => {
+    setError(null);
+    setTranscript('');
+    setSegments([]);
+    setRecordingId(null);
+    if (audioUrl) {
+      URL.revokeObjectURL(audioUrl);
+      setAudioUrl(null);
+    }
+    setStep('transcribe');
   };
 
   const handleAnswer = async (questionId: number, answer: string) => {
@@ -200,14 +242,26 @@ export default function Recording() {
     if (biographyId) navigate(`/biography/${biographyId}`);
   };
 
-  const stepIndex: Record<Step, number> = {
-    prep: 0,
-    record: 1,
-    transcribe: 2,
-    organize: 3,
-    chat: 4,
-    processing: 1,
-  };
+  const stepLabels = inputMode === 'text' ? TEXT_STEP_LABELS : VOICE_STEP_LABELS;
+
+  const stepIndex: Record<Step, number> =
+    inputMode === 'text'
+      ? {
+          prep: 0,
+          record: 1,
+          transcribe: 1,
+          organize: 2,
+          chat: 3,
+          processing: 2,
+        }
+      : {
+          prep: 0,
+          record: 1,
+          transcribe: 2,
+          organize: 3,
+          chat: 4,
+          processing: 1,
+        };
 
   const currentIdx = stepIndex[step];
   const suggestedTopic =
@@ -220,7 +274,7 @@ export default function Recording() {
       <h1 className="text-2xl font-bold">开始记录您的故事</h1>
 
       <div className="flex flex-wrap justify-center gap-4">
-        {STEP_LABELS.map((label, idx) => (
+        {stepLabels.map((label, idx) => (
           <div
             key={label}
             className={`flex items-center gap-2 ${idx === currentIdx ? 'step-active' : 'step-inactive'}`}
@@ -257,7 +311,36 @@ export default function Recording() {
 
       {step === 'prep' && (
         <div className="card p-6 space-y-6 text-left">
-          <h2 className="text-lg font-semibold">录音准备</h2>
+          <h2 className="text-lg font-semibold">开始准备</h2>
+
+          <div>
+            <label className="block text-sm text-muted mb-2">输入方式</label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setInputMode('voice')}
+                className={`px-4 py-2 rounded text-sm ${
+                  inputMode === 'voice' ? 'btn-primary py-2' : 'btn-secondary py-2'
+                }`}
+              >
+                语音录音
+              </button>
+              <button
+                type="button"
+                onClick={() => setInputMode('text')}
+                className={`px-4 py-2 rounded text-sm ${
+                  inputMode === 'text' ? 'btn-primary py-2' : 'btn-secondary py-2'
+                }`}
+              >
+                文字输入
+              </button>
+            </div>
+            <p className="text-xs text-muted mt-2">
+              {inputMode === 'voice'
+                ? '通过麦克风录制口述，系统自动转写为文字'
+                : '直接键入或粘贴故事内容，无需录音'}
+            </p>
+          </div>
 
           <div>
             <label className="block text-sm text-muted mb-2">选择传记</label>
@@ -308,9 +391,15 @@ export default function Recording() {
             </div>
           )}
 
-          <button type="button" onClick={() => setStep('record')} className="btn-primary w-full">
-            开始录音
-          </button>
+          {inputMode === 'voice' ? (
+            <button type="button" onClick={() => setStep('record')} className="btn-primary w-full">
+              开始录音
+            </button>
+          ) : (
+            <button type="button" onClick={startTextInput} className="btn-primary w-full">
+              开始输入
+            </button>
+          )}
         </div>
       )}
 
@@ -328,11 +417,15 @@ export default function Recording() {
 
       {step === 'transcribe' && (
         <div className="card p-6 space-y-4">
-          <h2 className="text-lg font-semibold">转写预览</h2>
+          <h2 className="text-lg font-semibold">
+            {inputMode === 'text' ? '输入您的故事' : '转写预览'}
+          </h2>
           <p className="text-sm text-muted">
-            {isOfflineMode()
-              ? '离线模式无自动转写，请收听录音后手动输入或粘贴文字'
-              : '请检查并修正转写文本，确认后提交 AI 整理'}
+            {inputMode === 'text'
+              ? '在此键入或粘贴您想记录的人生故事，确认后提交整理'
+              : isOfflineMode()
+                ? '离线模式无自动转写，请收听录音后手动输入或粘贴文字'
+                : '请检查并修正转写文本，确认后提交 AI 整理'}
           </p>
 
           {audioUrl && (
@@ -354,18 +447,36 @@ export default function Recording() {
             className="input-field min-h-[200px]"
             value={transcript}
             onChange={(e) => setTranscript(e.target.value)}
-            placeholder={isOfflineMode() ? '在此输入您讲述的内容...' : undefined}
+            placeholder={
+              inputMode === 'text'
+                ? '在此输入您的人生故事、回忆或感悟...'
+                : isOfflineMode()
+                  ? '在此输入您讲述的内容...'
+                  : '可在此修正转写文本...'
+            }
           />
 
-          <button type="button" onClick={handleConfirmTranscript} className="btn-primary w-full">
-            {isOfflineMode() ? '确认并整理传记' : '确认并提交 AI 整理'}
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setStep('prep')}
+              className="btn-secondary flex-1"
+            >
+              返回准备
+            </button>
+            <button type="button" onClick={handleConfirmTranscript} className="btn-primary flex-1">
+              {inputMode === 'text' || isOfflineMode()
+                ? '确认并整理传记'
+                : '确认并提交 AI 整理'}
+            </button>
+          </div>
         </div>
       )}
 
       {step === 'chat' && (
         <ChatInterface
           questions={questions}
+          skills={questionSkills}
           onAnswer={handleAnswer}
           onComplete={handleChatComplete}
           questionMode={questionMode}

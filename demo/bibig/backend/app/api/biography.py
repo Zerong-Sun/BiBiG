@@ -10,6 +10,7 @@ from app.models.biography import Biography, BiographyEntry, BiographyStyle
 from app.models.book import Book
 from app.models.user import User
 from app.services.biography.biography_service import BiographyService
+from app.services.biography.skill_fragments import get_biography_skills
 
 router = APIRouter()
 
@@ -120,7 +121,7 @@ async def get_suggested_questions(
         questions = await service.generate_questions(biography_id, mode=mode)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
-    return {"questions": questions}
+    return {"questions": questions, "skills": get_biography_skills()}
 
 
 @router.post("/{biography_id}/questions")
@@ -141,7 +142,7 @@ async def generate_questions_with_options(
         mode=request.mode,
         custom_questions=request.custom_questions,
     )
-    return {"questions": questions}
+    return {"questions": questions, "skills": get_biography_skills()}
 
 
 @router.post("/{biography_id}/answers")

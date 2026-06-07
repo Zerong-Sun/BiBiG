@@ -221,6 +221,25 @@ export async function offlineGetBiography(biographyId: string) {
   };
 }
 
+export async function offlineSubmitTextRecording(
+  recordingId: string,
+  transcript: string,
+  biographyId?: string,
+  title?: string,
+) {
+  const meta: OfflineRecordingMeta = {
+    id: recordingId,
+    biography_id: biographyId,
+    title: title || `文字记录 ${new Date().toLocaleString('zh-CN')}`,
+    transcript,
+    segments: [{ start: 0, end: 0, text: transcript }],
+    status: 'transcribed',
+    created_at: Date.now(),
+  };
+  await put('recordingMeta', meta);
+  return { id: recordingId, status: 'transcribed', transcript };
+}
+
 export async function offlineUploadRecording(recordingId: string, biographyId?: string) {
   const meta: OfflineRecordingMeta = {
     id: recordingId,
@@ -352,22 +371,29 @@ export async function offlineProcessRecording(
   };
 }
 
+const OFFLINE_BIOGRAPHY_SKILLS = [
+  { id: 'how-to-do-biography', name: 'How To Do Biography', source: 'Nigel Hamilton (2008)' },
+  { id: 'biography-vsi', name: 'Biography: A Very Short Introduction', source: 'Hermione Lee (2009)' },
+  { id: 'footsteps', name: 'Footsteps', source: 'Richard Holmes (1985)' },
+];
+
 export async function offlineGetSuggestedQuestions(biographyId: string, mode = 'ai') {
   const bio = await getOne<OfflineBiography>('biographies', biographyId);
-  if (!bio) return { questions: TEMPLATE_QUESTIONS };
+  if (!bio) return { questions: TEMPLATE_QUESTIONS, skills: OFFLINE_BIOGRAPHY_SKILLS };
 
   if (mode === 'synopsis' && bio.description) {
-    return { questions: SYNOPSIS_QUESTIONS(bio.description) };
+    return { questions: SYNOPSIS_QUESTIONS(bio.description), skills: OFFLINE_BIOGRAPHY_SKILLS };
   }
   if (mode === 'template' || bio.recording_method === 'timeline') {
-    return { questions: TEMPLATE_QUESTIONS };
+    return { questions: TEMPLATE_QUESTIONS, skills: OFFLINE_BIOGRAPHY_SKILLS };
   }
   if (bio.key_events && bio.key_events.length > 0) {
     return {
       questions: bio.key_events.slice(0, 4).map((ev) => `能详细讲讲关于「${ev}」的故事吗？`),
+      skills: OFFLINE_BIOGRAPHY_SKILLS,
     };
   }
-  return { questions: TEMPLATE_QUESTIONS };
+  return { questions: TEMPLATE_QUESTIONS, skills: OFFLINE_BIOGRAPHY_SKILLS };
 }
 
 export async function offlineSaveAnswer(

@@ -135,6 +135,32 @@ export async function ensureDemoUser(): Promise<string> {
   return user.id;
 }
 
+export async function submitTextRecording(params: {
+  userId: string;
+  transcript: string;
+  biographyId?: string;
+  title?: string;
+  recordingId?: string;
+}) {
+  if (isOfflineMode()) {
+    const recordingId = params.recordingId || `rec_${Date.now()}`;
+    return offline.offlineSubmitTextRecording(
+      recordingId,
+      params.transcript,
+      params.biographyId,
+      params.title,
+    );
+  }
+  const { data } = await api.post('/recordings/text', {
+    user_id: params.userId,
+    transcript: params.transcript,
+    biography_id: params.biographyId,
+    title: params.title,
+    recording_id: params.recordingId,
+  });
+  return data;
+}
+
 export async function uploadRecording(formData: FormData, options?: { autoTranscribe?: boolean }) {
   if (isOfflineMode()) {
     const recordingId = (formData.get('recording_id') as string) || `rec_${Date.now()}`;

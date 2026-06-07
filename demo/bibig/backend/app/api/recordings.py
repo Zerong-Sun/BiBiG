@@ -19,6 +19,14 @@ class TranscriptUpdate(BaseModel):
     transcript: str
 
 
+class TextRecordingRequest(BaseModel):
+    user_id: str
+    transcript: str
+    biography_id: str | None = None
+    title: str | None = None
+    recording_id: str | None = None
+
+
 class RecordingUpdate(BaseModel):
     biography_id: str | None = None
     title: str | None = None
@@ -77,6 +85,51 @@ async def upload_recording(
             }
 
     return {"id": recording.id, "status": recording.status.value}
+
+
+@router.post("/text")
+async def create_text_recording(
+    request: TextRecordingRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if request.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Cannot create recording for another user")
+    if not request.transcript.strip():
+        raise HTTPException(status_code=400, detail="Transcript cannot be empty")
+
+    if request.recording_id:
+        existing = db.query(Recording).filter(Recording.id == request.recording_id).first()
+        if existing:
+            existing.transcript = request.transcript
+            existing.status = RecordingStatus.TRANSCRIBED
+            if request.biography_id is not None:
+                existing.biography_id = request.biography_id
+            db.commit()
+            return {
+                "id": existing.id,
+                "status": existing.status.value,
+                "transcript": existing.transcript,
+            }
+
+    rid = request.recording_id or str(uuid.uuid4())
+    recording = Recording(
+        id=rid,
+        user_id=request.user_id,
+        biography_id=request.biography_id,
+        title=request.title or f"文字记录 {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+        audio_url="text://manual",
+        transcript=request.transcript,
+        status=RecordingStatus.TRANSCRIBED,
+    )
+    db.add(recording)
+    db.commit()
+
+    return {
+        "id": recording.id,
+        "status": recording.status.value,
+        "transcript": recording.transcript,
+    }
 
 
 @router.post("/{recording_id}/transcribe")

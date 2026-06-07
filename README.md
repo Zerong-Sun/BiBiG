@@ -8,6 +8,7 @@
 |-------|------|------|
 | [how-to-do-biography](skills/how-to-do-biography/) | Nigel Hamilton, *How To Do Biography* (2008) | 实操：议程、受众、研究、结构、写作、出版 |
 | [biography-vsi](skills/biography-vsi/) | Hermione Lee, *Biography: A Very Short Introduction* (2009) | 理论：定义、隐喻、十条规则、读者契约、评判 |
+| [footsteps](skills/footsteps/) | Richard Holmes, *Footsteps* (1985) | 田野：足迹追踪、断桥隐喻、文本考古、追寻叙事 |
 
 > 本仓库 **只发布 skill**。示例应用见 [`demo/bibig/`](demo/bibig/)。
 
@@ -20,7 +21,8 @@ BiBiG/
 ├── template/                 # 新 skill 模板
 ├── skills/
 │   ├── how-to-do-biography/
-│   └── biography-vsi/
+│   ├── biography-vsi/
+│   └── footsteps/
 └── demo/
     └── bibig/                # 口述传记 Demo（参考实现）
 ```
@@ -40,6 +42,7 @@ npx skills add Zerong-Sun/BiBiG
 ```bash
 npx skills add Zerong-Sun/BiBiG --path skills/how-to-do-biography
 npx skills add Zerong-Sun/BiBiG --path skills/biography-vsi
+npx skills add Zerong-Sun/BiBiG --path skills/footsteps
 ```
 
 安装后重启 Agent 会话以加载新 skill。
@@ -56,6 +59,10 @@ $skill-installer install https://github.com/Zerong-Sun/BiBiG/tree/main/skills/ho
 $skill-installer install https://github.com/Zerong-Sun/BiBiG/tree/main/skills/biography-vsi
 ```
 
+```
+$skill-installer install https://github.com/Zerong-Sun/BiBiG/tree/main/skills/footsteps
+```
+
 或使用安装脚本（需网络）：
 
 ```bash
@@ -67,6 +74,10 @@ python ~/.codex/skills/skill-installer/scripts/install-skill-from-github.py \
 python ~/.codex/skills/skill-installer/scripts/install-skill-from-github.py \
   --repo Zerong-Sun/BiBiG \
   --path skills/biography-vsi
+
+python ~/.codex/skills/skill-installer/scripts/install-skill-from-github.py \
+  --repo Zerong-Sun/BiBiG \
+  --path skills/footsteps
 ```
 
 安装到 `~/.codex/skills/<skill-name>`。完成后 **重启 Codex**。
@@ -87,6 +98,7 @@ cd BiBiG
 git clone https://github.com/Zerong-Sun/BiBiG.git
 cp -r BiBiG/skills/how-to-do-biography ~/.cursor/skills/
 cp -r BiBiG/skills/biography-vsi ~/.cursor/skills/
+cp -r BiBiG/skills/footsteps ~/.cursor/skills/
 ```
 
 **方式 C — Remote Rule（GitHub）**：
@@ -112,7 +124,11 @@ cp -r BiBiG/skills/<skill-name> ~/.codex/skills/    # Codex
 用 biography-vsi 评估这份传记大纲是否符合「十条规则」
 ```
 
-两个 skill 可配合：`biography-vsi` 定框架与伦理，`how-to-do-biography` 推进研究与成稿。
+```
+用 footsteps 帮我规划重走史蒂文森塞文山脉路线，并设计平行日记与文本考古清单
+```
+
+三个 skill 可配合：`biography-vsi` 定框架与伦理，`how-to-do-biography` 推进成书结构，`footsteps` 负责田野追寻与地方证据。
 
 ## 创建新 skill
 

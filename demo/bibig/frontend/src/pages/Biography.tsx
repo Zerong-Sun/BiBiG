@@ -11,6 +11,7 @@ import {
   attachRecordingToBiography,
   getApiErrorMessage,
 } from '../services/api';
+import SkillAttribution, { type BiographySkill, DEFAULT_SKILLS } from '../components/SkillAttribution';
 import { useAppStore } from '../hooks/useAppStore';
 import { useAuth } from '../hooks/useAuth';
 
@@ -52,6 +53,7 @@ export default function BiographyPage() {
   const [recordings, setRecordings] = useState<ServerRecording[]>([]);
   const [orphanRecordings, setOrphanRecordings] = useState<ServerRecording[]>([]);
   const [questions, setQuestions] = useState<string[]>([]);
+  const [questionSkills, setQuestionSkills] = useState<BiographySkill[]>(DEFAULT_SKILLS);
   const [generating, setGenerating] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
@@ -66,6 +68,7 @@ export default function BiographyPage() {
     setBiography(data);
     const q = await getSuggestedQuestions(id);
     setQuestions(q.questions);
+    setQuestionSkills(q.skills ?? DEFAULT_SKILLS);
   };
 
   const loadRecordings = async (uid: string) => {
@@ -269,7 +272,8 @@ export default function BiographyPage() {
 
       {questions.length > 0 && (
         <section className="card p-6 text-left">
-          <h2 className="text-lg font-semibold mb-3">AI 建议补充的问题</h2>
+          <h2 className="text-lg font-semibold mb-1">AI 建议补充的问题</h2>
+          <SkillAttribution skills={questionSkills} className="mb-3" />
           <ul className="list-disc pl-5 space-y-2 text-muted">
             {questions.map((q, i) => (
               <li key={i}>{q}</li>
