@@ -1,100 +1,129 @@
-# BiBiG — Agent Skills 技能库
+# BiBiG — Biography Agent Skills
 
-面向 **Cursor**、**Codex** 等 AI 编程助手的开源 **Agent Skills** 合集。  
-从书籍与实践中提炼可复用的工作流、规范与工具，供任何人安装使用。
+[![skills.sh](https://skills.sh/b/Zerong-Sun/BiBiG)](https://skills.sh/Zerong-Sun/BiBiG)
 
-> **本仓库重点**：`skills/` 技能库与 `books/` 参考书体系。  
-> `backend/`、`frontend/` 是传记写作的示例应用（非维护重点），展示如何把 skill 接入真实产品。
+从经典传记教材提炼的 **Agent Skills**，供 Cursor、Codex 等 AI 助手安装使用。
 
-## 快速开始
+| Skill | 来源 | 用途 |
+|-------|------|------|
+| [how-to-do-biography](skills/how-to-do-biography/) | Nigel Hamilton, *How To Do Biography* (2008) | 实操：议程、受众、研究、结构、写作、出版 |
+| [biography-vsi](skills/biography-vsi/) | Hermione Lee, *Biography: A Very Short Introduction* (2009) | 理论：定义、隐喻、十条规则、读者契约、评判 |
 
-### 在 Cursor 中使用
+> 本仓库 **只发布 skill**。示例应用见 [`demo/bibig/`](demo/bibig/)。
 
-克隆本仓库后，技能已通过 `.cursor/skills` 软链接指向 `skills/`，在对应项目中打开即可自动发现。
-
-也可手动安装到全局技能目录：
-
-```bash
-# 安装单个技能
-cp -r skills/biography-writer ~/.cursor/skills/
-
-# 或安装全部
-cp -r skills/* ~/.cursor/skills/
-```
-
-在对话中直接提及任务，Agent 会根据 `SKILL.md` 的 `description` 自动匹配；也可显式调用，例如：
-
-> 用 biography-writer 帮我规划这本传记的研究提纲
-
-### 在 Codex 中使用
-
-```bash
-cp -r skills/biography-writer ~/.codex/skills/
-```
-
-## 项目结构
+## 仓库结构
 
 ```
 BiBiG/
-├── skills/              # 技能库（本仓库核心）
-│   ├── biography-writer/   # 原创：非虚构传记写作
-│   ├── skill-creator/      # 创建新技能
-│   ├── pdf/ docx/ pptx/    # 文档处理
-│   └── ...
-├── books/               # 参考书库（本地自备，不入库）
-│   └── biography/          # 传记写作类参考
-├── apps/                # 示例应用说明
-│   └── bibig/              # 口述传记 Demo
-├── backend/             # Demo 后端（FastAPI）
-├── frontend/            # Demo 前端（非重点）
-└── docker-compose.yml
+├── README.md
+├── CONTRIBUTING.md
+├── template/                 # 新 skill 模板
+├── skills/
+│   ├── how-to-do-biography/
+│   └── biography-vsi/
+└── demo/
+    └── bibig/                # 口述传记 Demo（参考实现）
 ```
 
-## 技能分类
+## 安装
 
-完整目录见 [skills/README.md](skills/README.md)。
+### skills.sh（推荐）
 
-| 分类 | 代表技能 | 说明 |
-|------|----------|------|
-| **写作与传记** | `biography-writer` | 从参考书提炼的传记写作规范 |
-| **文档** | `pdf`, `docx`, `pptx`, `xlsx` | 办公文档读写与生成 |
-| **设计** | `figma`, `canvas-design`, `frontend-design` | 设计与前端 |
-| **开发流程** | `brainstorming`, `writing-plans`, `test-driven-development` | 规划、实现、验证 |
-| **平台与 API** | `claude-api`, `cloudflare-deploy`, `mcp-builder` | 集成与部署 |
-| **元技能** | `skill-creator`, `skill-installer` | 创建与管理技能 |
-
-### 原创技能
-
-| 技能 | 来源 | 状态 |
-|------|------|------|
-| [biography-writer](skills/biography-writer/) | `books/biography/` 参考书提炼 | 可用，持续扩展 |
-
-更多原创技能会随参考书整理逐步加入。
-
-## 参考书 → 技能
-
-`books/` 存放**本地参考书**（版权原因不入 Git）。阅读、笔记、提炼后，在 `skills/` 发布对应 Agent Skill。
-
-流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。
-
-当前参考书主题：
-
-- **传记写作**（`books/biography/`）→ `biography-writer`
-
-## 示例应用：BiBiG
-
-[apps/bibig/README.md](apps/bibig/README.md) 中的口述传记 Demo，展示 `biography-writer` 如何接入 LLM prompt。前端非维护重点，需要时本地启动即可。
+安装本仓库全部 skill：
 
 ```bash
-cd backend && uvicorn app.main:app --reload --port 8000
+npx skills add Zerong-Sun/BiBiG
 ```
 
-## 贡献
+安装单个 skill（若 CLI 支持路径参数）：
 
-欢迎提交新 skill、改进现有 skill、或补充参考书目与提炼笔记。详见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+```bash
+npx skills add Zerong-Sun/BiBiG --path skills/how-to-do-biography
+npx skills add Zerong-Sun/BiBiG --path skills/biography-vsi
+```
+
+安装后重启 Agent 会话以加载新 skill。
+
+### Codex — skill-installer
+
+在 Codex 对话中：
+
+```
+$skill-installer install https://github.com/Zerong-Sun/BiBiG/tree/main/skills/how-to-do-biography
+```
+
+```
+$skill-installer install https://github.com/Zerong-Sun/BiBiG/tree/main/skills/biography-vsi
+```
+
+或使用安装脚本（需网络）：
+
+```bash
+# 来自 openai/skills 的 skill-installer
+python ~/.codex/skills/skill-installer/scripts/install-skill-from-github.py \
+  --repo Zerong-Sun/BiBiG \
+  --path skills/how-to-do-biography
+
+python ~/.codex/skills/skill-installer/scripts/install-skill-from-github.py \
+  --repo Zerong-Sun/BiBiG \
+  --path skills/biography-vsi
+```
+
+安装到 `~/.codex/skills/<skill-name>`。完成后 **重启 Codex**。
+
+### Cursor
+
+**方式 A — 克隆本仓库**（已配置 `.cursor/skills` → `skills/`）：
+
+```bash
+git clone https://github.com/Zerong-Sun/BiBiG.git
+cd BiBiG
+# 在 Cursor 中打开此目录即可发现 skill
+```
+
+**方式 B — 复制到全局**：
+
+```bash
+git clone https://github.com/Zerong-Sun/BiBiG.git
+cp -r BiBiG/skills/how-to-do-biography ~/.cursor/skills/
+cp -r BiBiG/skills/biography-vsi ~/.cursor/skills/
+```
+
+**方式 C — Remote Rule（GitHub）**：
+
+1. Cursor Settings → Rules → Add Rule → Remote Rule (GitHub)
+2. 填入：`https://github.com/Zerong-Sun/BiBiG`
+
+### 手动安装（任意 Agent）
+
+```bash
+git clone https://github.com/Zerong-Sun/BiBiG.git
+cp -r BiBiG/skills/<skill-name> ~/.cursor/skills/   # Cursor
+cp -r BiBiG/skills/<skill-name> ~/.codex/skills/    # Codex
+```
+
+## 使用示例
+
+```
+用 how-to-do-biography 帮我规划一本企业家传记：议程、受众、章节结构
+```
+
+```
+用 biography-vsi 评估这份传记大纲是否符合「十条规则」
+```
+
+两个 skill 可配合：`biography-vsi` 定框架与伦理，`how-to-do-biography` 推进研究与成稿。
+
+## 创建新 skill
+
+见 [CONTRIBUTING.md](CONTRIBUTING.md) 与 [template/SKILL.md](template/SKILL.md)。
+
+## Demo 应用
+
+[`demo/bibig/`](demo/bibig/) 展示如何将 `how-to-do-biography` 接入 LLM prompt，**非本仓库维护重点**。
 
 ## 许可
 
-- **Skills**：各技能目录内 LICENSE 文件为准（多数为 MIT 或 Apache-2.0）
-- **参考书**：请自行合法获取，勿将受版权保护的文件提交到本仓库
-- **BiBiG 应用代码**：见仓库根目录许可（如有）
+- Skill 文件：各目录内 [LICENSE.txt](skills/how-to-do-biography/LICENSE.txt)（MIT）
+- 参考书目版权归原作者；skill 内容为原创归纳，非全书转载
+- Demo 应用代码：MIT

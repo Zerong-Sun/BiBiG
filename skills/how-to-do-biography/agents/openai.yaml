@@ -1,0 +1,7 @@
+interface:
+  display_name: "How To Do Biography"
+  short_description: "Plan, research, structure, and draft print biographies (Hamilton primer)."
+  default_prompt: "Use $how-to-do-biography to plan a biography from subject, agenda, audience, research, and chapter shape."
+
+policy:
+  allow_implicit_invocation: true

@@ -28,4 +28,5 @@ books/**/*.azw3
 # Test
 .pytest_cache/
 htmlcov/
-backend/.pytest_cache/
+demo/bibig/backend/.pytest_cache/
+demo/bibig/backend/storage/

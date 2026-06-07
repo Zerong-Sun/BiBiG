@@ -1,0 +1,7 @@
+interface:
+  display_name: "Biography VSI"
+  short_description: "Define, evaluate, and debate biography (Hermione Lee VSI)."
+  default_prompt: "Use $biography-vsi to explain what biography is, which rules apply, and how to judge a life-writing project."
+
+policy:
+  allow_implicit_invocation: true
