@@ -44,11 +44,7 @@ export default function AudioRecorder({ onRecordingComplete, biographyId }: Audi
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          sampleRate: 16000,
-        },
+        audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 16000 },
       });
       streamRef.current = stream;
 
@@ -174,21 +170,15 @@ export default function AudioRecorder({ onRecordingComplete, biographyId }: Audi
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const formatDate = (timestamp: number) =>
-    new Date(timestamp).toLocaleString('zh-CN');
+  const formatDate = (timestamp: number) => new Date(timestamp).toLocaleString('zh-CN');
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col items-center gap-6 p-8 bg-white rounded-2xl shadow-lg">
-        <div className="text-4xl font-mono text-gray-800">{formatTime(recordingTime)}</div>
+      <div className="card flex flex-col items-center gap-6 p-8">
+        <div className="text-4xl font-mono">{formatTime(recordingTime)}</div>
 
-        {statusMessage && (
-          <div className="text-sm text-blue-500">{statusMessage}</div>
-        )}
-
-        {isSaving && (
-          <div className="text-sm text-blue-500 animate-pulse">正在保存...</div>
-        )}
+        {statusMessage && <div className="text-sm text-accent">{statusMessage}</div>}
+        {isSaving && <div className="text-sm text-accent animate-pulse">正在保存...</div>}
 
         <button
           type="button"
@@ -196,59 +186,41 @@ export default function AudioRecorder({ onRecordingComplete, biographyId }: Audi
           disabled={isSaving}
           className={`w-24 h-24 rounded-full flex items-center justify-center transition-all ${
             isRecording
-              ? 'bg-red-500 hover:bg-red-600 animate-pulse'
-              : 'bg-blue-500 hover:bg-blue-600'
+              ? 'bg-[var(--recording-active)] hover:opacity-90 animate-pulse'
+              : 'bg-[var(--accent-warm)] hover:opacity-90'
           } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           {isRecording ? (
             <div className="w-8 h-8 bg-white rounded-sm" />
           ) : (
-            <span className="text-white text-3xl">🎙</span>
+            <span className="text-2xl">🎙</span>
           )}
         </button>
 
-        <p className="text-gray-500 text-lg">
-          {isRecording ? '点击停止录音' : '点击开始录音'}
-        </p>
-
-        <p className="text-xs text-gray-400 text-center">
-          录音将自动保存到本地，即使关闭页面也不会丢失
-        </p>
+        <p className="text-muted text-lg">{isRecording ? '点击停止录音' : '点击开始录音'}</p>
+        <p className="text-xs text-muted text-center">录音将自动保存到本地，即使关闭页面也不会丢失</p>
       </div>
 
       {localRecordings.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-lg p-6">
+        <div className="card p-6">
           <h3 className="text-lg font-semibold mb-4 text-left">已保存的录音</h3>
           <div className="space-y-3">
             {localRecordings.map((recording) => (
-              <div
-                key={recording.id}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-              >
+              <div key={recording.id} className="card-muted flex items-center justify-between p-3">
                 <div className="text-left">
                   <p className="font-medium">{formatDate(recording.timestamp)}</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted">
                     时长: {formatTime(recording.duration)}
-                    {recording.synced && (
-                      <span className="ml-2 text-green-500">已同步</span>
-                    )}
+                    {recording.synced && <span className="ml-2 text-accent">已同步</span>}
                   </p>
                 </div>
                 <div className="flex gap-2">
                   {!recording.synced && (
-                    <button
-                      type="button"
-                      onClick={() => syncToServer(recording)}
-                      className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
-                    >
+                    <button type="button" onClick={() => syncToServer(recording)} className="btn-primary text-sm py-1 px-3">
                       同步
                     </button>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteRecording(recording.id)}
-                    className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600"
-                  >
+                  <button type="button" onClick={() => handleDeleteRecording(recording.id)} className="btn-danger">
                     删除
                   </button>
                 </div>

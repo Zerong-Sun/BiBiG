@@ -4,15 +4,25 @@ from typing import List
 from sqlalchemy.orm import Session
 from app.models.biography import Biography, BiographyEntry, Chapter
 from app.models.book import Book, BookFormat, BookStatus
-from app.services.llm.factory import get_llm_provider
+from app.services.settings_service import get_llm_for_user
 from app.services.book.pdf_generator import PDFGenerator
+from app.services.biography.prompts import (
+    build_chapter_enhance_system_prompt,
+    build_chapter_structure_system_prompt,
+)
 
 
 class BookGenerator:
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, user_id: str | None = None):
         self.db = db
-        self.llm = get_llm_provider()
+        self.user_id = user_id
+        self.llm = get_llm_for_user(db, user_id) if user_id else None
         self.pdf_generator = PDFGenerator()
+
+    def _get_llm(self, user_id: str):
+        if self.llm and self.user_id == user_id:
+            return self.llm
+        return get_llm_for_user(self.db, user_id)
 
     async def generate_book(self, biography_id: str, book_format: BookFormat = BookFormat.PDF) -> Book:
         biography = self.db.query(Biography).filter(Biography.id == biography_id).first()
@@ -30,7 +40,8 @@ class BookGenerator:
             raise ValueError("No content to generate book")
 
         chapters = await self._organize_chapters(biography, entries)
-        book_content = await self._generate_full_content(biography, chapters, entries)
+        llm = self._get_llm(biography.user_id)
+        book_content = await self._generate_full_content(biography, chapters, entries, llm)
 
         file_url = None
         if book_format == BookFormat.PDF:
@@ -65,25 +76,12 @@ class BookGenerator:
         messages = [
             {
                 "role": "system",
-                "content": """你是一位专业的书籍编辑。请根据以下传记内容，设计合理的章节结构。
-
-要求：
-1. 章节数量控制在1-15章
-2. 每章有明确的主题
-3. 按时间或主题逻辑组织
-4. 为每章生成简短摘要
-
-返回JSON格式：
-{
-  "chapters": [
-    {"number": 1, "title": "...", "summary": "...", "entry_ids": []}
-  ]
-}""",
+                "content": build_chapter_structure_system_prompt(),
             },
             {"role": "user", "content": entries_text},
         ]
 
-        response = await self.llm.chat(messages, temperature=0.5)
+        response = await self._get_llm(biography.user_id).chat(messages, temperature=0.5)
         try:
             chapters_data = json.loads(response)
         except json.JSONDecodeError:
@@ -121,12 +119,13 @@ class BookGenerator:
         biography: Biography,
         chapters: List[Chapter],
         entries: List[BiographyEntry],
+        llm,
     ) -> dict:
         full_chapters = []
         combined_content = "\n\n".join([e.content for e in entries])
 
         for chapter in chapters:
-            enhanced_content = await self._enhance_chapter(chapter, combined_content)
+            enhanced_content = await self._enhance_chapter(chapter, combined_content, llm)
             chapter.content = enhanced_content
             full_chapters.append(
                 {
@@ -144,22 +143,15 @@ class BookGenerator:
             "full_text": "\n\n".join([ch["content"] for ch in full_chapters]),
         }
 
-    async def _enhance_chapter(self, chapter: Chapter, content: str) -> str:
+    async def _enhance_chapter(self, chapter: Chapter, content: str, llm) -> str:
         messages = [
             {
                 "role": "system",
-                "content": f"""你是一位专业的传记作家。请润色以下章节内容，使其更加流畅、完整。
-
-章节标题：{chapter.title}
-章节摘要：{chapter.summary or ''}
-
-要求：
-1. 保持原始内容的真实性和情感
-2. 补充过渡语句
-3. 优化段落结构
-4. 添加适当的文学性描写""",
+                "content": build_chapter_enhance_system_prompt(
+                    chapter.title, chapter.summary or ""
+                ),
             },
             {"role": "user", "content": content},
         ]
 
-        return await self.llm.chat(messages, temperature=0.7)
+        return await llm.chat(messages, temperature=0.7)

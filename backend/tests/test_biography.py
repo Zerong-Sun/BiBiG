@@ -83,7 +83,12 @@ async def test_upload_recording_and_process():
         )
         assert upload_resp.status_code == 200
         recording_id = upload_resp.json()["id"]
-        assert upload_resp.json()["status"] == "transcribed"
+
+        transcribe_resp = await client.post(
+            f"/api/recordings/{recording_id}/transcribe", headers=headers
+        )
+        assert transcribe_resp.status_code == 200
+        assert transcribe_resp.json()["status"] == "transcribed"
 
         process_resp = await client.post(
             f"/api/biography/{biography_id}/process",

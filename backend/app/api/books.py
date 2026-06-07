@@ -29,7 +29,7 @@ async def generate_book(
     current_user: User = Depends(get_current_user),
 ):
     _require_biography_owner(biography_id, current_user, db)
-    generator = BookGenerator(db)
+    generator = BookGenerator(db, user_id=current_user.id)
     try:
         book = await generator.generate_book(biography_id, book_format)
     except ValueError as e:
@@ -87,3 +87,32 @@ async def download_book(
         )
 
     raise HTTPException(status_code=404, detail="Book file not available locally")
+
+
+@router.get("/user/{user_id}")
+async def list_user_books(
+    user_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Cannot access another user's books")
+    from app.models.biography import Biography
+
+    biographies = db.query(Biography).filter(Biography.user_id == user_id).all()
+    bio_ids = [b.id for b in biographies]
+    if not bio_ids:
+        return []
+    books = db.query(Book).filter(Book.biography_id.in_(bio_ids)).order_by(Book.created_at.desc()).all()
+    return [
+        {
+            "id": b.id,
+            "biography_id": b.biography_id,
+            "title": b.title,
+            "format": b.format.value,
+            "status": b.status.value,
+            "word_count": b.word_count,
+            "created_at": b.created_at.isoformat() if b.created_at else None,
+        }
+        for b in books
+    ]

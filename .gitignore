@@ -19,6 +19,12 @@ dist/
 # OS
 .DS_Store
 
+# Reference books (copyrighted — keep local, not in repo)
+books/**/*.pdf
+books/**/*.epub
+books/**/*.mobi
+books/**/*.azw3
+
 # Test
 .pytest_cache/
 htmlcov/

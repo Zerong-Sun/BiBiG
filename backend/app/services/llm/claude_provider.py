@@ -3,6 +3,10 @@ from typing import List, Dict, Any, Optional
 import anthropic
 from app.services.llm.base import LLMProvider
 from app.core.config import settings
+from app.services.biography.prompts import (
+    build_biography_system_prompt,
+    build_interview_questions_system_prompt,
+)
 
 
 class ClaudeProvider(LLMProvider):
@@ -39,14 +43,7 @@ class ClaudeProvider(LLMProvider):
         style: str,
         context: Optional[Dict[str, Any]] = None,
     ) -> str:
-        style_prompts = {
-            "lyrical": "以抒情优美的散文风格写作，注重情感描写和意境营造",
-            "rigorous": "以严谨客观的纪实风格写作，注重事实准确性和细节",
-            "story": "以引人入胜的故事风格写作，注重情节和人物刻画",
-            "chronological": "以时间线为主轴，按年代顺序记录人生经历",
-        }
-
-        system_prompt = f"""你是一位专业的传记作家。请根据以下口述内容，{style_prompts.get(style, style_prompts['story'])}，整理成传记章节。"""
+        system_prompt = build_biography_system_prompt(style)
 
         user_content = f"口述内容：\n{transcript}"
         if context:
@@ -69,7 +66,7 @@ class ClaudeProvider(LLMProvider):
             [
                 {
                     "role": "system",
-                    "content": "你是一位善于倾听的传记采访者。生成3-5个温暖自然的追问问题，每行一个。",
+                    "content": build_interview_questions_system_prompt(missing_info),
                 },
                 {
                     "role": "user",

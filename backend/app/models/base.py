@@ -17,6 +17,6 @@ def get_db():
 
 
 def init_db():
-    from app.models import user, recording, biography, book  # noqa: F401
+    from app.models import user, user_settings, recording, biography, book  # noqa: F401
 
     Base.metadata.create_all(bind=engine)

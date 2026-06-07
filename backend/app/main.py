@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import users, recordings, biography, books
+from app.api import users, recordings, biography, books, settings
 from app.models.base import init_db
 
 
@@ -25,8 +25,14 @@ app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(recordings.router, prefix="/api/recordings", tags=["recordings"])
 app.include_router(biography.router, prefix="/api/biography", tags=["biography"])
 app.include_router(books.router, prefix="/api/books", tags=["books"])
+app.include_router(settings.router, prefix="/api/settings", tags=["settings"])
 
 
 @app.get("/health")
 async def health_check():
+    return {"status": "ok"}
+
+
+@app.get("/api/health")
+async def api_health_check():
     return {"status": "ok"}

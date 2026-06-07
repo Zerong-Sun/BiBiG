@@ -20,3 +20,4 @@ class User(Base):
 
     recordings = relationship("Recording", back_populates="user")
     biographies = relationship("Biography", back_populates="user")
+    settings = relationship("UserSettings", back_populates="user", uselist=False)

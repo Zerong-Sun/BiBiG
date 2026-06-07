@@ -1,0 +1,7 @@
+interface:
+  display_name: "Biography Writer"
+  short_description: "Research, structure, draft, and fact-check real-life biographies."
+  default_prompt: "Use $biography-writer to plan a rigorous biography project from subject, sources, audience, and ethical risks."
+
+policy:
+  allow_implicit_invocation: true

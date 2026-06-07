@@ -3,12 +3,19 @@ from typing import List, Dict, Any, Optional
 from openai import AsyncOpenAI
 from app.services.llm.base import LLMProvider
 from app.core.config import settings
+from app.services.biography.prompts import (
+    build_biography_system_prompt,
+    build_interview_questions_system_prompt,
+)
 
 
 class OpenAIProvider(LLMProvider):
     def __init__(self):
-        self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-        self.model = "gpt-4o"
+        kwargs: dict = {"api_key": settings.OPENAI_API_KEY}
+        if settings.OPENAI_BASE_URL:
+            kwargs["base_url"] = settings.OPENAI_BASE_URL
+        self.client = AsyncOpenAI(**kwargs)
+        self.model = settings.OPENAI_MODEL
 
     async def chat(
         self,
@@ -30,20 +37,7 @@ class OpenAIProvider(LLMProvider):
         style: str,
         context: Optional[Dict[str, Any]] = None,
     ) -> str:
-        style_prompts = {
-            "lyrical": "以抒情优美的散文风格写作，注重情感描写和意境营造",
-            "rigorous": "以严谨客观的纪实风格写作，注重事实准确性和细节",
-            "story": "以引人入胜的故事风格写作，注重情节和人物刻画",
-            "chronological": "以时间线为主轴，按年代顺序记录人生经历",
-        }
-
-        system_prompt = f"""你是一位专业的传记作家。请根据以下口述内容，{style_prompts.get(style, style_prompts['story'])}，整理成传记章节。
-
-要求：
-1. 保持口述者的真实情感和个人特色
-2. 补充必要的背景信息（如果上下文提供）
-3. 使用中文写作
-4. 输出格式为Markdown"""
+        system_prompt = build_biography_system_prompt(style)
 
         messages = [
             {"role": "system", "content": system_prompt},
@@ -65,16 +59,11 @@ class OpenAIProvider(LLMProvider):
         existing_content: str,
         missing_info: List[str],
     ) -> List[str]:
-        system_prompt = """你是一位善于倾听的传记采访者。根据已有的口述内容，生成3-5个追问问题，帮助补充缺失的信息或深化故事。
-
-要求：
-1. 问题要自然、温暖，像和老人聊天一样
-2. 避免重复已有信息
-3. 引导回忆具体细节和情感
-4. 每行一个问题，不要编号"""
-
         messages = [
-            {"role": "system", "content": system_prompt},
+            {
+                "role": "system",
+                "content": build_interview_questions_system_prompt(missing_info),
+            },
             {
                 "role": "user",
                 "content": f"已有内容：\n{existing_content}\n\n需要补充的信息：{', '.join(missing_info)}",

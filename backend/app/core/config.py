@@ -9,8 +9,14 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "your-secret-key-change-in-production"
 
     OPENAI_API_KEY: Optional[str] = None
+    OPENAI_BASE_URL: Optional[str] = None
+    OPENAI_MODEL: str = "gpt-4o"
     ANTHROPIC_API_KEY: Optional[str] = None
     DEFAULT_LLM_PROVIDER: str = "mock"
+
+    STT_PROVIDER: str = "mock"
+    STT_API_KEY: Optional[str] = None
+    STT_BASE_URL: Optional[str] = None
 
     MINIO_ENDPOINT: str = "localhost:9000"
     MINIO_ACCESS_KEY: str = "minioadmin"

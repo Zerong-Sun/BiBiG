@@ -32,6 +32,7 @@ class Biography(Base):
     birth_year = Column(Integer, nullable=True)
     hometown = Column(String, nullable=True)
     key_events = Column(Text, nullable=True)
+    recording_method = Column(String, default="guided")
 
     created_at = Column(DateTime, default=lambda: datetime.now(UTC))
     updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
